@@ -86,8 +86,6 @@ http:
           rateLimitPaths: []
           # - {path: "/login", maxReqs: 5, window: 60}
 
-          # Honeypot paths — alert Hermes immediately on access
-          honeypotPaths: []
 
           # AbuseIPDB integration
           abuseIPDBKey: ""

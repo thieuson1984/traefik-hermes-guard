@@ -74,8 +74,6 @@ type Config struct {
 
 	// Feature: Rate limit by path
 	RateLimitPaths        []RateLimitPath `json:"rateLimitPaths,omitempty"`
-	// Feature: Honeypot mode
-	HoneypotPaths         []string `json:"honeypotPaths,omitempty"`
 	// Feature: IP reputation
 	AbuseIPDBKey          string   `json:"abuseIPDBKey,omitempty"`
 	AbuseIPDBThreshold    int      `json:"abuseIPDBThreshold,omitempty"`
@@ -236,7 +234,6 @@ type handler struct {
 		maxReqs int
 		window  int
 	}
-	honeypotRes  []*regexp.Regexp
 	hostProfiles map[string]*hostProfileCfg
 	ja3BlockMap  map[string]bool
 	hermesBlocks int64
@@ -307,7 +304,6 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	}
 
 	h.initRateLimitPaths()
-	h.initHoneypotPaths()
 	h.initHostProfiles()
 	h.initJA3BlockList()
 	h.initBodyInspector()
@@ -957,19 +953,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// Honeypot detection
-	if len(h.honeypotRes) > 0 && h.checkHoneypot(req.URL.Path) {
-		h.logger.warn("HONEYPOT: ip=%s path=%s", clientIP, req.URL.RequestURI())
-		h.blockRequest(w, req, "honeypot:"+req.URL.Path)
-		h.notifySlack(clientIP, req, "honeypot:"+req.URL.Path, 1.0)
-		h.hermes.NotifyBlock(WebhookEvent{
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
-			ClientIP:  clientIP, Host: req.Host, Method: req.Method,
-			Path: req.URL.RequestURI(), Reason: "honeypot:" + req.URL.Path, Verdict: "block",
-		})
-		h.auditLog(clientIP, req, "honeypot:"+req.URL.Path, 1.0)
-		return
-	}
 
 	// AbuseIPDB check
 	if h.checkAbuseIPDB(clientIP) {
@@ -1651,13 +1634,6 @@ func (h *handler) initRateLimitPaths() {
 	}
 }
 
-func (h *handler) initHoneypotPaths() {
-	for _, pattern := range h.config.HoneypotPaths {
-		re, err := regexp.Compile(pattern)
-		if err != nil { continue }
-		h.honeypotRes = append(h.honeypotRes, re)
-	}
-}
 
 func (h *handler) initHostProfiles() {
 	h.hostProfiles = make(map[string]*hostProfileCfg)
@@ -1674,12 +1650,6 @@ type hostProfileCfg struct {
 	blockCountries []string
 }
 
-func (h *handler) checkHoneypot(path string) bool {
-	for _, re := range h.honeypotRes {
-		if re.MatchString(path) { return true }
-	}
-	return false
-}
 
 func (h *handler) getPathRateLimit(path string) (int, int) {
 	for _, rp := range h.rateLimitPaths {
