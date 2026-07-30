@@ -811,6 +811,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			h.serveAuditExport(w, req)
 			return
 		}
+		if req.URL.Path == "/.hermes-guard/stream" {
+			if !h.checkAdminAuth(req) {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			h.serveSSE(w, req)
+			return
+		}
 	}
 
 	// Scheduled blocking rules
@@ -1867,6 +1875,36 @@ func (h *handler) serveFeedbackStats(w http.ResponseWriter) {
 	fmt.Fprintf(w, `{"hermes_blocks":%d,"hermes_correct":%d,"accuracy":%.1f}`, blocks, correct, accuracy)
 }
 
+func (h *handler) serveSSE(w http.ResponseWriter, req *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	ctx := req.Context()
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			data := fmt.Sprintf(`{"requests":%d,"blocked":%d,"challenged":%d,"allowed":%d,"rate_hits":%d,"geoip":%d}`,
+				h.readStat(&h.stats.requests), h.readStat(&h.stats.blocked),
+				h.readStat(&h.stats.challenged), h.readStat(&h.stats.allowed),
+				h.readStat(&h.stats.rateHits), h.readStat(&h.stats.geoipBlocks))
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		}
+	}
+}
+
 func (h *handler) Close() {
 	h.cancel()
 	if h.cache != nil {
@@ -1994,12 +2032,12 @@ a{color:#f59e0b}
 <body>
 <h1>Hermes Guard Admin</h1>
 <div class="stats">
-<div class="stat"><div class="v">{{REQUESTS}}</div><div class="l">Requests</div></div>
-<div class="stat"><div class="v">{{ALLOWED}}</div><div class="l">Allowed</div></div>
-<div class="stat"><div class="v">{{BLOCKED}}</div><div class="l">Blocked</div></div>
-<div class="stat"><div class="v">{{CHALLENGED}}</div><div class="l">Challenged</div></div>
-<div class="stat"><div class="v">{{RATE_HITS}}</div><div class="l">Rate Hits</div></div>
-<div class="stat"><div class="v">{{GEOIP}}</div><div class="l">GeoIP Blocks</div></div>
+<div class="stat"><div class="v" id="v-requests">{{REQUESTS}}</div><div class="l">Requests</div></div>
+<div class="stat"><div class="v" id="v-allowed">{{ALLOWED}}</div><div class="l">Allowed</div></div>
+<div class="stat"><div class="v" id="v-blocked">{{BLOCKED}}</div><div class="l">Blocked</div></div>
+<div class="stat"><div class="v" id="v-challenged">{{CHALLENGED}}</div><div class="l">Challenged</div></div>
+<div class="stat"><div class="v" id="v-rate">{{RATE_HITS}}</div><div class="l">Rate Hits</div></div>
+<div class="stat"><div class="v" id="v-geoip">{{GEOIP}}</div><div class="l">GeoIP Blocks</div></div>
 <div class="stat"><div class="v">{{LEAKS}}</div><div class="l">Resp Leaks</div></div>
 <div class="stat"><div class="v">{{TURNSTILE}}</div><div class="l">Turnstile OK</div></div>
 </div>
@@ -2019,7 +2057,19 @@ a{color:#f59e0b}
 <h2>Links</h2>
 <p><a href="/.hermes-guard/metrics?secret={{SECRET}}">Prometheus metrics</a></p>
 </div>
-<div class="refresh">Auto-refresh 30s — <a href="/.hermes-guard/admin?secret={{SECRET}}">manual</a></div>
-<script>setTimeout(function(){location.reload()},30000)</script>
+<div class="refresh">Live via SSE — <a href="/.hermes-guard/admin?secret={{SECRET}}">manual refresh</a></div>
+<script>
+var evtSource = new EventSource("/.hermes-guard/stream?secret={{SECRET}}");
+evtSource.onmessage = function(e) {
+    var d = JSON.parse(e.data);
+    document.getElementById('v-requests').innerText = d.requests;
+    document.getElementById('v-allowed').innerText = d.allowed;
+    document.getElementById('v-blocked').innerText = d.blocked;
+    document.getElementById('v-challenged').innerText = d.challenged;
+    document.getElementById('v-rate').innerText = d.rate_hits;
+    document.getElementById('v-geoip').innerText = d.geoip;
+};
+evtSource.onerror = function() { evtSource.close(); };
+</script>
 </body>
 </html>`
