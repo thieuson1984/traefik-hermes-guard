@@ -93,7 +93,7 @@ http:
           hermesEndpoint: ""
           hermesToken: ""
           hermesTLSInsecure: false
-          hermesTLSInsecure: false
+          hermesTLSCAFile: ""
           hermesRetryEnabled: true
           hermesRetryInterval: 30
           hermesBlockWebhookURL: "/webhooks/traefik-block-events"
