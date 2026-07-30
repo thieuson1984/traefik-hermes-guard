@@ -860,12 +860,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Hermes-ordered challenge (captcha for this IP)
-	if h.cache != nil && h.cache.IsChallenged(clientIP) {
-		h.challengeRequest(w, req, "hermes_challenge:"+clientIP)
-		return
-	}
-
 	// ---- GeoIP country blocking ----
 	country := ""
 	if h.geoip != nil && h.geoip.IsLoaded() {
@@ -970,6 +964,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			h.passThrough(w, req)
 			return
 		}
+	}
+
+	// Hermes-ordered challenge
+	if h.cache != nil && h.cache.IsChallenged(clientIP) {
+		h.challengeRequest(w, req, "hermes_challenge:"+clientIP)
+		return
 	}
 
 	// ---- Layer 1: Fast-Path Detection ----
