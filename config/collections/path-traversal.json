@@ -26,6 +26,11 @@
       "name": "Path Traversal — Unicode bypass",
       "pattern": "(?i)((?:．){2,}|(?:%c0%\\.){2,}|(?:%uff0e){2,}(?:/|\\\\))",
       "severity": "high"
+    },
+    {
+      "name": "Sensitive Files — .env & config",
+      "pattern": "(?i)((?:^|/)\\.env(?:\\b|$|\\.)|/\\.git(?:/|config|ignore|attributes|modules)|composer\\.(?:json|lock)|wp-config\\.php|credentials(?:\\.json|\\.txt|\\b)|(?:/|\\\\)config\\.php(?:$|\\b)|database\\.yml)",
+      "severity": "critical"
     }
   ]
 }
