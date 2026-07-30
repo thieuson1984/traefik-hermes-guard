@@ -1,0 +1,77 @@
+{
+  "category": "java-attacks",
+  "description": "OWASP CRS — 944-APPLICATION-ATTACK-JAVA",
+  "patterns": [
+    {
+      "name": "Remote Command Execution: Suspicious Java class detected",
+      "pattern": "(?i)java\\.lang\\.(?:runtime|processbuilder)",
+      "severity": "critical"
+    },
+    {
+      "name": "Remote Command Execution: Java process spawn (CVE-2017-9805)",
+      "pattern": "(?i)(?:runtime|processbuilder)",
+      "severity": "critical"
+    },
+    {
+      "name": "CRS-",
+      "pattern": "(?i)(?:unmarshaller|base64data|java\\.)",
+      "severity": "medium"
+    },
+    {
+      "name": "Remote Command Execution: Java serialization (CVE-2015-4852)",
+      "pattern": "(?i)(?:clonetransform|xmldecod)er|f(?:orclosure|ilewriter)|in(?:stantiate(?:factory|transformer)|vokertransformer)|(?:prototype(?:clone|serialization)factor|getpropert)y|whileclosure",
+      "severity": "critical"
+    },
+    {
+      "name": "CRS-",
+      "pattern": "(?:runtime|processbuilder)",
+      "severity": "medium"
+    },
+    {
+      "name": "Java Injection Attack: Java Script File Upload Found",
+      "pattern": "(?i).*\\.(?:jsp|jspx)\\.*$",
+      "severity": "critical"
+    },
+    {
+      "name": "Potential Remote Command Execution: Log4j / Log4shell",
+      "pattern": "(?i)(?:\\$|&dollar;?)(?:\\{|&l(?:brace|cub);?)(?:[^\\}]{0,15}(?:\\$|&dollar;?)(?:\\{|&l(?:brace|cub);?)|jndi|ctx)",
+      "severity": "critical"
+    },
+    {
+      "name": "Potential Remote Command Execution: Log4j / Log4shell",
+      "pattern": "(?i)(?:\\$|&dollar;?)(?:\\{|&l(?:brace|cub);?)(?:[^\\}]*(?:\\$|&dollar;?)(?:\\{|&l(?:brace|cub);?)|jndi|ctx)",
+      "severity": "critical"
+    },
+    {
+      "name": "Magic bytes Detected, probable java serialization in use",
+      "pattern": "\\xac\\xed\\x00\\x05",
+      "severity": "critical"
+    },
+    {
+      "name": "Magic bytes Detected Base64 Encoded, probable java serialization in use",
+      "pattern": "(?:rO0ABQ|KztAAU|Cs7QAF)",
+      "severity": "critical"
+    },
+    {
+      "name": "Remote Command Execution: Suspicious Java method detected",
+      "pattern": "(?i)java\\b.+(?:runtime|processbuilder)",
+      "severity": "critical"
+    },
+    {
+      "name": "Remote Command Execution: Malicious class-loading payload",
+      "pattern": "class\\.module\\.classLoader\\.resources\\.context\\.parent\\.pipeline|springframework\\.context\\.support\\.FileSystemXmlApplicationContext",
+      "severity": "critical"
+    },
+    {
+      "name": "Base64 encoded string matched suspicious keyword",
+      "pattern": "c(?:nVudGltZQ|HJv(?:Y2Vzc2J1aWxkZXI|dG90eXBl(?:Y2xvbmVmYWN0b3J5|c2VyaWFsaXphdGlvbmZhY3Rvcnk)))|H(?:J1bnRpbWU|Byb(?:2Nlc3NidWlsZGVy|3RvdHlwZ(?:WNsb25lZmFjdG9yeQ|XNlcmlhbGl6YXRpb25mYWN0b3J5))|doaWxlY2xvc3VyZQ)|B(?:(?:ydW50aW1|mb3JjbG9zdXJ)l|wcm9(?:jZXNzYnVpbGRlcg|0b3R5cGV(?:jbG9uZWZhY3Rvcnk|zZXJpYWxpemF0aW9uZmFjdG9yeQ))|jbG9uZXRyYW5zZm9ybWVy|pbn(?:N0YW50aWF0Z(?:WZhY3Rvcnk|XRyYW5zZm9ybWVy)|Zva2VydHJhbnNmb3JtZXI)|3aGlsZWNsb3N1cmU)|Y2xvbmV0cmFuc2Zvcm1lcg|G(?:Nsb25ldHJhbnNmb3JtZXI|ZvcmNsb3N1cmU|lu(?:c3RhbnRpYXRl(?:ZmFjdG9yeQ|dHJhbnNmb3JtZXI)|dm9rZXJ0cmFuc2Zvcm1lcg))|Zm9yY2xvc3VyZQ|aW5(?:zdGFudGlhdGV(?:mYWN0b3J5|0cmFuc2Zvcm1lcg)|2b2tlcnRyYW5zZm9ybWVy)|d2hpbGVjbG9zdXJl",
+      "severity": "critical"
+    },
+    {
+      "name": "Potential Remote Command Execution: Log4j / Log4shell",
+      "pattern": "(?i)(?:\\$|&dollar;?)(?:\\{|&l(?:brace|cub);?)",
+      "severity": "critical"
+    }
+  ],
+  "source": "https://github.com/coreruleset/coreruleset/blob/main/rules/REQUEST-944-APPLICATION-ATTACK-JAVA.conf"
+}

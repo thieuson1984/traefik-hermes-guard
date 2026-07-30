@@ -19,7 +19,25 @@
     "geoip": "ban",
     "rate_limit": "captcha",
     "malicious_ua": "ban",
-    "fast_path": "ban"
+    "fast_path": "ban",
+    "rfi": "ban",
+    "php-attacks": "ban",
+    "java-attacks": "ban",
+    "node-attacks": "ban",
+    "session-fixation": "captcha",
+    "protocol-enforcement": "captcha",
+    "web-shells-resp": "ban",
+    "lfi-os-files": "ban",
+    "unix-shell-cmds": "ban",
+    "win-powershell": "ban",
+    "php-function-names": "ban",
+    "php-variables": "ban",
+    "sql-errors": "ban",
+    "web-shells-php": "ban",
+    "web-shells-asp": "ban",
+    "java-classes": "ban",
+    "restricted-files": "ban",
+    "ssrf-keywords": "ban"
   },
   "default_action": "ban"
 }

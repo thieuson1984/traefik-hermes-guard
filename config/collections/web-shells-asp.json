@@ -1,0 +1,12 @@
+{
+  "category": "web-shells-asp",
+  "description": "OWASP CRS keyword list — web-shells-asp (3 entries)",
+  "patterns": [
+    {
+      "name": "web-shells-asp",
+      "pattern": "(?i)(<title>Webshell Akmal archtte id</title>|<html><title>ASPYDrvsInfo</title>|<html><head><title>RHTOOLS)",
+      "severity": "high"
+    }
+  ],
+  "source": "https://github.com/coreruleset/coreruleset/blob/main/rules/web-shells-asp.data"
+}

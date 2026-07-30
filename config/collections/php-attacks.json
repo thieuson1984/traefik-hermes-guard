@@ -1,0 +1,77 @@
+{
+  "category": "php-attacks",
+  "description": "OWASP CRS — 933-APPLICATION-ATTACK-PHP",
+  "patterns": [
+    {
+      "name": "PHP Injection Attack: PHP Open Tag Found",
+      "pattern": "(?i)<\\?(?:php[\\s\\x0b]|[\\s\\x0b=]|xml(?:[\\s\\x0b]+[^a-z]|:)|$)|\\[[/\\x5c]?php\\]|\\{/?php\\}",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: PHP Script File Upload Found",
+      "pattern": "(?i).*\\.ph(?:p\\d*|tml|ar|ps|t|pt)\\.*$",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Variable Access Found",
+      "pattern": "\\$\\s*\\{\\s*\\S[^\\{\\}]*\\}",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: I/O Stream Found",
+      "pattern": "(?i)php://(?:std(?:in|out|err)|(?:in|out)put|f(?:d|ilter)|memory|temp)",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Wrapper scheme detected",
+      "pattern": "(?:bzip2|expect|glob|ogg|(?:ph|r)ar|ssh2(?:.(?:s(?:hell|(?:ft|c)p)|exec|tunnel))?|z(?:ip|lib))://",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: High-Risk PHP Function Call Found",
+      "pattern": "(?i)\\b\\(?[\\\"']*(?:assert(?:_options)?|c(?:hr|reate_function)|e(?:val|x(?:ec|p))|f(?:ile(?:group)?|open|puts)|glob|i(?:mage(?:gif|(?:jpe|pn)g|wbmp|xbm)|s_a|ntval)|m(?:d5|kdir)|o(?:pendir|rd)|p(?:assthru|hpinfo|open|r(?:intf|ev))|r(?:eadfile|trim)|s(?:t(?:rip_tags|at)|ubstr|ystem)|tmpfile|u(?:n(?:(?:pac|lin)k|serialize)|sort))(?:/\\*[^\\*]*\\*+(?:[^\\*/][^\\*]*\\*+)*/|(?:#|//)[^\\n\\r]*[\\n\\r]|[\\s\\x0b\\\"])*[\\\"']*\\)?[\\s\\x0b]*\\([^\\)]*\\)",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Serialized Object Injection",
+      "pattern": "[oOcC]:\\d+:\\\".+?\\\":\\d+:\\{.*}",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Variable Function Call Found",
+      "pattern": "\\$+(?:[A-Z_a-z\\x7f-\\x{ff}][0-9A-Z_a-z\\x7f-\\x{ff}]*|[\\s\\x0b]*\\{[^\\}]+\\})(?:[\\s\\x0b]|\\[(?:[^\\[\\]]|\\[[^\\]]+\\])+\\]|\\{[^\\}]+\\}|/(?:\\*[^\\*]*\\*+(?:[^\\*/][^\\*]*\\*+)*/|/[^\\n\\r]*[\\n\\r])|#[^\\n\\r]*[\\n\\r])*\\(.*\\)",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Variable Function Call Found",
+      "pattern": "(?:\\((?:.+\\)(?:[\\\"'][\\-0-9A-Z_a-z]+[\\\"'])?\\(.+|[^\\)]*string[^\\)]*\\)[\\s\\x0b\\\"'\\-\\.0-9A-\\[\\]_a-\\{\\}]+\\([^\\)]*)|(?:\\[[0-9]+\\]|\\{[0-9]+\\}|\\$[^\\(\\),\\./;\\x5c]+|[\\\"'][\\-0-9A-Z\\x5c_a-z]+[\\\"'])\\(.+)\\);",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: PHP Session File Upload Attempt",
+      "pattern": "(?i)(?:^|[/\\x5c])sess_[,\\-0-9a-z]{20,256}$",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Variables Found",
+      "pattern": "AUTH_TYPE|HTTP_(?:ACCEPT(?:_(?:CHARSET|ENCODING|LANGUAGE))?|CONNECTION|(?:HOS|USER_AGEN)T|KEEP_ALIVE|(?:REFERE|X_FORWARDED_FO)R)|ORIG_PATH_INFO|PATH_(?:INFO|TRANSLATED)|QUERY_STRING|REQUEST_URI",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Low-Value PHP Function Call Found",
+      "pattern": "(?i)\\b(?:a(?:bs|s(?:in|sert(?:_options)?))|basename|c(?:h(?:eckdate|r(?:oot)?)|o(?:(?:mpac|(?:nsta|u)n)t|py|sh?)|r(?:eate_function|ypt)|urrent)|d(?:ate|e(?:coct|fined?)|ir)|e(?:nd|val|x(?:ec|p(?:lode)?|tract))|f(?:ile(?:(?:[acm]tim|inod|siz|typ)e|group|owner|perms)?|l(?:o(?:ck|or)|ush))|glob|h(?:ash|eader)|i(?:date|m(?:age(?:gif|(?:jpe|pn)g|wbmp|xbm)|plode)|s_a)|key|l(?:ink|og)|m(?:a(?:il|x)|d5|in)|n(?:ame|ext)|o(?:pendir|rd)|p(?:a(?:ck|ss(?:thru)?)|i|o(?:pen|w)|rev)|r(?:an(?:d|ge)|e(?:(?:adfil|nam)e|set)|ound)|s(?:(?:erializ|huffl)e|in|leep|(?:or|ta)t|ubstr|y(?:mlink|s(?:log|tem)))|t(?:an|(?:im|mpfil)e|ouch|rim)|u(?:cfirst|n(?:lin|pac)k)|virtual)(?:[\\s\\x0b]|/\\*[^\\*]*\\*+(?:[^\\*/][^\\*]*\\*+)*/|(?:#|//)[^\\n\\r]*[\\n\\r])*\\(.*\\)",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: PHP Script File Upload Found",
+      "pattern": "(?i).*\\.ph(?:p\\d*|tml|ar|ps|t|pt)\\..*$",
+      "severity": "critical"
+    },
+    {
+      "name": "PHP Injection Attack: Variable Function Call Found",
+      "pattern": "(?:\\((?:.+\\)(?:[\\\"'][\\-0-9A-Z_a-z]+[\\\"'])?\\(.+|[^\\)]*string[^\\)]*\\)[\\s\\x0b\\\"'\\-\\.0-9A-\\[\\]_a-\\{\\}]+\\([^\\)]*)|(?:\\[[0-9]+\\]|\\{[0-9]+\\}|\\$[^\\(\\),\\./;\\x5c]+|[\\\"'][\\-0-9A-Z\\x5c_a-z]+[\\\"'])\\(.+)\\)(?:;|$)?",
+      "severity": "critical"
+    }
+  ],
+  "source": "https://github.com/coreruleset/coreruleset/blob/main/rules/REQUEST-933-APPLICATION-ATTACK-PHP.conf"
+}
