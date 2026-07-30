@@ -37,7 +37,10 @@
     "web-shells-asp": "ban",
     "java-classes": "ban",
     "restricted-files": "ban",
-    "ssrf-keywords": "ban"
+    "ssrf-keywords": "ban",
+    "cve-path": "ban",
+    "cve-regex": "ban",
+    "cve-keyword": "ban"
   },
   "default_action": "ban"
 }
