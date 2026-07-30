@@ -955,16 +955,31 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// ---- Layer 1: Lua L1 checks ----
-	if h.cache != nil {
-		blocked, whitelisted, _, err := h.cache.EvalL1(clientIP)
-		if err == nil {
-			if blocked {
-				h.blockRequest(w, req, "cache_blacklist")
-				return
+	// ---- Layer 1: Rate Limiting ----
+	if h.config.RateLimitReqs > 0 && h.cache != nil {
+		if allowed, _ := h.cache.RateLimitCheck(clientIP, h.config.RateLimitReqs, h.config.RateLimitWindow); !allowed {
+			h.statsMu.Lock()
+			h.stats.rateHits++
+			h.statsMu.Unlock()
+			_ = h.cache.BlockIP(clientIP, h.config.RateLimitBlockTTL)
+			if h.decideAction("rate_limit", "") == "captcha" && h.config.TurnstileSecretKey != "" {
+				h.challengeRequest(w, req, "rate_limit")
+			} else {
+				h.blockRequest(w, req, "rate_limit")
 			}
-			if whitelisted || h.matchesStaticWhitelist(clientIP) {
-				h.passThrough(w, req)
+			h.notifyWebhook(clientIP, req, "rate_limit", 1.0)
+			h.auditLog(clientIP, req, "rate_limit", 1.0)
+			return
+		}
+	}
+
+	// Per-path rate limiting
+	if len(h.rateLimitPaths) > 0 && h.cache != nil {
+		if maxReqs, window := h.getPathRateLimit(req.URL.Path); maxReqs > 0 {
+			if allowed, _ := h.cache.RateLimitCheck(clientIP+"@path", maxReqs, window); !allowed {
+				_ = h.cache.BlockIP(clientIP, h.config.RateLimitBlockTTL)
+				h.blockRequest(w, req, "path_rate_limit:"+req.URL.Path)
+				h.notifySlack(clientIP, req, "path_rate_limit:"+req.URL.Path, 1.0)
 				return
 			}
 		}
