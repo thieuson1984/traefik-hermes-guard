@@ -1783,13 +1783,32 @@ func (h *handler) serveAuditExport(w http.ResponseWriter, req *http.Request) {
 	if format != "csv" {
 		format = "json"
 	}
-	w.Header().Set("Content-Type", "application/"+format)
-	w.Header().Set("Content-Disposition", "attachment; filename=audit."+format)
 
+	entries := h.cache.GetAuditEntries(100)
 	if format == "csv" {
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=hermes-guard-audit.csv")
 		w.Write([]byte("timestamp,client_ip,method,path,reason,risk_score,host\n"))
+		for _, entry := range entries {
+			var m map[string]interface{}
+			if json.Unmarshal([]byte(entry), &m) == nil {
+				fmt.Fprintf(w, "%s,%s,%s,%s,%s,%.2f,%s\n",
+					m["timestamp"], m["client_ip"], m["method"],
+					m["path"], m["reason"], m["risk_score"], m["host"])
+			}
+		}
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", "attachment; filename=hermes-guard-audit.json")
+		w.Write([]byte("["))
+		for i, entry := range entries {
+			if i > 0 {
+				w.Write([]byte(","))
+			}
+			w.Write([]byte(entry))
+		}
+		w.Write([]byte("]"))
 	}
-	w.Write([]byte(`[]`))
 }
 
 func (h *handler) isScheduledActive() (bool, string) {
@@ -1803,13 +1822,25 @@ func (h *handler) isScheduledActive() (bool, string) {
 		if len(parts) != 2 {
 			continue
 		}
-		start, _ := strconv.Atoi(strings.Replace(parts[0], ":", "", 1))
-		end, _ := strconv.Atoi(strings.Replace(parts[1], ":", "", 1))
+		start := parseTimeToMinutes(parts[0])
+		end := parseTimeToMinutes(parts[1])
 		if currentMinutes >= start && currentMinutes <= end {
 			return true, rule.Action
 		}
 	}
 	return false, ""
+}
+
+func parseTimeToMinutes(s string) int {
+	s = strings.TrimSpace(s)
+	parts := strings.Split(s, ":")
+	if len(parts) == 2 {
+		h, _ := strconv.Atoi(parts[0])
+		m, _ := strconv.Atoi(parts[1])
+		return h*60 + m
+	}
+	v, _ := strconv.Atoi(s)
+	return v
 }
 func (h *handler) recordHermesFeedback(hermesVerdict string, actualMatch bool) {
 	if !h.config.HermesFeedbackEnabled {

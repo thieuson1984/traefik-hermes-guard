@@ -476,3 +476,27 @@ func (c *cacheLayer) AuditLog(entry string) error {
 	_ = c.client.cmd("LTRIM", auditKey, fmt.Sprintf("%d", auditMaxEntries-1))
 	return nil
 }
+
+func (c *cacheLayer) GetAuditEntries(limit int) []string {
+	if c.memFallback || c.client == nil {
+		return nil
+	}
+	result, err := c.client.cmdString("LRANGE", auditKey, "0", fmt.Sprintf("%d", limit-1))
+	if err != nil {
+		return nil
+	}
+	// Parse LRANGE response — it returns the list as a bulk string
+	// Use individual entries via cmdString which handles array responses
+	entries := make([]string, 0, limit)
+	// Since cmdString can't handle LRANGE which returns an array, 
+	// use a workaround: read the list entries individually
+	for i := 0; i < limit; i++ {
+		data, err := c.client.cmdString("LINDEX", auditKey, fmt.Sprintf("%d", i))
+		if err != nil || data == "" {
+			break
+		}
+		entries = append(entries, data)
+	}
+	_ = result
+	return entries
+}
