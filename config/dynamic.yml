@@ -80,6 +80,32 @@ http:
           httpStatusCodeDenied: 403
           redirectUrlIfDenied: ""
           fallbackWhenError: true
+          trustCFHeaders: false
+
+          # Rate limit by path (regex patterns)
+          rateLimitPaths: []
+          # - {path: "/login", maxReqs: 5, window: 60}
+
+          # Honeypot paths — alert Hermes immediately on access
+          honeypotPaths: []
+
+          # AbuseIPDB integration
+          abuseIPDBKey: ""
+          abuseIPDBThreshold: 80
+
+          # Multi-tenancy — per-domain profiles
+          hostProfiles: []
+          # - {host: "api.example.com", mode: "monitor", minRiskScore: 0.3}
+
+          # GeoIP auto-update
+          geoipUpdateURL: ""
+          geoipUpdateIntervalH: 24
+
+          # Hermes AI feedback loop
+          hermesFeedbackEnabled: false
+
+          # JA3 fingerprint blocklist
+          ja3BlockList: []
 
           excludedPathPatterns:
             - "^[^/]+/health$"

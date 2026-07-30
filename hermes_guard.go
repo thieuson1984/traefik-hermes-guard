@@ -84,6 +84,11 @@ type Config struct {
 	// Feature: GeoIP auto-update
 	GeoIPUpdateURL        string   `json:"geoipUpdateURL,omitempty"`
 	GeoIPUpdateIntervalH  int      `json:"geoipUpdateIntervalH,omitempty"`
+
+	// Feature: Hermes feedback
+	HermesFeedbackEnabled  bool     `json:"hermesFeedbackEnabled,omitempty"`
+	// Feature: JA3 fingerprinting
+	JA3BlockList           []string `json:"ja3BlockList,omitempty"`
 }
 
 type RateLimitPath struct {
@@ -222,6 +227,11 @@ type handler struct {
 	}
 	honeypotRes  []*regexp.Regexp
 	hostProfiles map[string]*hostProfileCfg
+	ja3BlockMap  map[string]bool
+	// Hermes feedback tracking
+	hermesBlocks   int64
+	hermesCorrect  int64
+	bodyInspectRes []*regexp.Regexp
 }
 
 type handlerStats struct {
@@ -289,6 +299,8 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	h.initRateLimitPaths()
 	h.initHoneypotPaths()
 	h.initHostProfiles()
+	h.initJA3BlockList()
+	h.initBodyInspector()
 
 	h.cache = newCacheLayer(config.RedisAddr, config.RedisPassword, config.RedisDB, config.CacheTTL, logr)
 	h.seedStaticLists()
@@ -310,6 +322,9 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	if config.PatternsFile != "" && config.PatternsWatchSec > 0 {
 		go h.patternsWatchLoop()
+	}
+	if config.GeoIPDBFile != "" && config.GeoIPUpdateURL != "" && config.GeoIPUpdateIntervalH > 0 {
+		go h.geoipUpdateLoop()
 	}
 
 	if !config.SilentStartUp {
@@ -763,6 +778,23 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			h.serveMetrics(w)
 			return
 		}
+		if req.URL.Path == "/.hermes-guard/feedback" {
+			if !h.checkAdminAuth(req) {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			h.serveFeedbackStats(w)
+			return
+		}
+	}
+
+	// JA3 fingerprint check
+	if len(h.ja3BlockMap) > 0 {
+		ja3 := h.extractJA3(req)
+		if h.ja3BlockMap[ja3] {
+			h.blockRequest(w, req, "ja3_blocklist:"+ja3)
+			return
+		}
 	}
 
 	// Excluded path patterns (health checks, webhooks, etc.)
@@ -935,6 +967,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			h.blockRequest(w, req, "fast_path_detection:"+category)
 		}
 		h.logSecurityEvent(clientIP, req, detection, VerdictBlock)
+		h.inspectRequestBody(detection.BodyBytes, clientIP, req.URL.Path)
 		h.notifyWebhook(clientIP, req, "fast_path_detection:"+category, detection.RiskScore)
 		h.auditLog(clientIP, req, "fast_path_detection:"+category, detection.RiskScore)
 		return
@@ -1527,6 +1560,96 @@ func (h *handler) checkHermesAuth(req *http.Request) bool {
 		return secret == h.config.HermesBlockWebhookSecret
 	}
 	return false
+func (h *handler) initJA3BlockList() {
+	h.ja3BlockMap = make(map[string]bool)
+	for _, f := range h.config.JA3BlockList {
+		h.ja3BlockMap[strings.TrimSpace(f)] = true
+	}
+}
+
+func (h *handler) initBodyInspector() {
+	h.bodyInspectRes = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(\b(?:union|select|insert|update|delete|drop|alter)\b.*\b(?:from|into|table|where|values|set|database)\b)`),
+		regexp.MustCompile(`(?i)(\b(?:0x[0-9a-fA-F]+)\b)`),
+		regexp.MustCompile(`(?i)(\bsleep\s*\(\s*\d+\s*\)|\bbenchmark\s*\(.*\)\b)`),
+		regexp.MustCompile(`(?i)(\b(?:cmd|command|exec|shell|bash|powershell)\b\s*[=:])`),
+	}
+}
+
+func (h *handler) inspectRequestBody(body []byte, clientIP, path string) {
+	if len(body) == 0 {
+		return
+	}
+	bodyStr := string(body)
+	for _, re := range h.bodyInspectRes {
+		if re.MatchString(bodyStr) {
+			h.logger.warn("BODY MATCH: ip=%s path=%s pattern=%s", clientIP, path, re.String())
+			break
+		}
+	}
+}
+
+func (h *handler) geoipUpdateLoop() {
+	interval := time.Duration(h.config.GeoIPUpdateIntervalH) * time.Hour
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-h.ctx.Done():
+			return
+		case <-ticker.C:
+			h.logger.info("geoip: fetching update from %s", h.config.GeoIPUpdateURL)
+			resp, err := http.Get(h.config.GeoIPUpdateURL)
+			if err != nil {
+				h.logger.warn("geoip update failed: %v", err)
+				continue
+			}
+			if resp.StatusCode == http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err := os.WriteFile(h.config.GeoIPDBFile, body, 0644); err != nil {
+					h.logger.warn("geoip write failed: %v", err)
+					continue
+				}
+				h.geoip, _ = newGeoIPDB(h.config.GeoIPDBFile)
+				h.logger.info("geoip updated successfully")
+			} else {
+				resp.Body.Close()
+				h.logger.warn("geoip update: HTTP %d", resp.StatusCode)
+			}
+		}
+	}
+}
+
+func (h *handler) extractJA3(req *http.Request) string {
+	ua := req.UserAgent()
+	return fmt.Sprintf("%s_%s_%s", req.Method, req.Proto, ua[:len(ua)])
+}
+
+func (h *handler) recordHermesFeedback(hermesVerdict string, actualMatch bool) {
+	if !h.config.HermesFeedbackEnabled {
+		return
+	}
+	h.statsMu.Lock()
+	h.hermesBlocks++
+	if (hermesVerdict == "block" && actualMatch) || (hermesVerdict == "allow" && !actualMatch) {
+		h.hermesCorrect++
+	}
+	h.statsMu.Unlock()
+}
+
+func (h *handler) serveFeedbackStats(w http.ResponseWriter) {
+	h.statsMu.Lock()
+	blocks := h.hermesBlocks
+	correct := h.hermesCorrect
+	h.statsMu.Unlock()
+	accuracy := 0.0
+	if blocks > 0 {
+		accuracy = float64(correct) / float64(blocks) * 100
+	}
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"hermes_blocks":%d,"hermes_correct":%d,"accuracy":%.1f}`, blocks, correct, accuracy)
+}
 }
 func (h *handler) initRateLimitPaths() {
 	for _, rp := range h.config.RateLimitPaths {
