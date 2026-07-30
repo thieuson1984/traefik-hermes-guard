@@ -71,6 +71,33 @@ type Config struct {
 	RedirectURLIfDenied   string   `json:"redirectUrlIfDenied,omitempty"`
 	ExcludedPathPatterns  []string `json:"excludedPathPatterns,omitempty"`
 	FallbackWhenError     bool     `json:"fallbackWhenError,omitempty"`
+
+	// Feature: Rate limit by path
+	RateLimitPaths        []RateLimitPath `json:"rateLimitPaths,omitempty"`
+	// Feature: Honeypot mode
+	HoneypotPaths         []string `json:"honeypotPaths,omitempty"`
+	// Feature: IP reputation
+	AbuseIPDBKey          string   `json:"abuseIPDBKey,omitempty"`
+	AbuseIPDBThreshold    int      `json:"abuseIPDBThreshold,omitempty"`
+	// Feature: Multi-tenancy
+	HostProfiles          []HostProfile `json:"hostProfiles,omitempty"`
+	// Feature: GeoIP auto-update
+	GeoIPUpdateURL        string   `json:"geoipUpdateURL,omitempty"`
+	GeoIPUpdateIntervalH  int      `json:"geoipUpdateIntervalH,omitempty"`
+}
+
+type RateLimitPath struct {
+	Path    string `json:"path"`    // regex pattern
+	MaxReqs int    `json:"maxReqs"`
+	Window  int    `json:"window"`  // seconds
+}
+
+type HostProfile struct {
+	Host          string   `json:"host"`          // domain
+	Mode          string   `json:"mode,omitempty"`
+	MinRiskScore  float64  `json:"minRiskScore,omitempty"`
+	BlockCountries []string `json:"blockCountries,omitempty"`
+	Collections   []string `json:"collections,omitempty"` // override which collections
 }
 
 func CreateConfig() *Config {
@@ -188,6 +215,13 @@ type handler struct {
 	cancel         context.CancelFunc
 	logger         *logger
 	denyStatusCode int
+	rateLimitPaths []struct {
+		re      *regexp.Regexp
+		maxReqs int
+		window  int
+	}
+	honeypotRes  []*regexp.Regexp
+	hostProfiles map[string]*hostProfileCfg
 }
 
 type handlerStats struct {
@@ -251,6 +285,10 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		regexp.MustCompile(`(?i)(?:api[_-]?key|secret|token|password|credential)\s*[:=]\s*['"\w]+`),
 		regexp.MustCompile(`(?i)-----BEGIN\s+(?:RSA|EC|DSA|OPENSSH)\s+PRIVATE\s+KEY`),
 	}
+
+	h.initRateLimitPaths()
+	h.initHoneypotPaths()
+	h.initHostProfiles()
 
 	h.cache = newCacheLayer(config.RedisAddr, config.RedisPassword, config.RedisDB, config.CacheTTL, logr)
 	h.seedStaticLists()
@@ -807,6 +845,41 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// Per-path rate limiting
+	if len(h.rateLimitPaths) > 0 && h.cache != nil {
+		if maxReqs, window := h.getPathRateLimit(req.URL.Path); maxReqs > 0 {
+			if allowed, _ := h.cache.RateLimitCheck(clientIP+"@path", maxReqs, window); !allowed {
+				_ = h.cache.BlockIP(clientIP, h.config.RateLimitBlockTTL)
+				h.blockRequest(w, req, "path_rate_limit:"+req.URL.Path)
+				h.notifySlack(clientIP, req, "path_rate_limit:"+req.URL.Path, 1.0)
+				return
+			}
+		}
+	}
+
+	// Honeypot detection
+	if h.checkHoneypot(req.URL.Path) {
+		h.logger.warn("HONEYPOT: ip=%s path=%s", clientIP, req.URL.RequestURI())
+		h.blockRequest(w, req, "honeypot:"+req.URL.Path)
+		h.notifySlack(clientIP, req, "honeypot:"+req.URL.Path, 1.0)
+		h.hermes.NotifyBlock(WebhookEvent{
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+			ClientIP:  clientIP, Host: req.Host, Method: req.Method,
+			Path: req.URL.RequestURI(), Reason: "honeypot:" + req.URL.Path, Verdict: "block",
+		})
+		h.auditLog(clientIP, req, "honeypot:"+req.URL.Path, 1.0)
+		return
+	}
+
+	// AbuseIPDB check
+	if h.checkAbuseIPDB(clientIP) {
+		h.logger.info("ABUSEIPDB: ip=%s known malicious", clientIP)
+		_ = h.cache.BlockIP(clientIP, h.config.CacheTTL)
+		h.blockRequest(w, req, "abuseipdb")
+		h.notifySlack(clientIP, req, "abuseipdb", 1.0)
+		return
+	}
+
 	// ---- Layer 1: Lua L1 checks ----
 	if h.cache != nil {
 		blocked, whitelisted, _, err := h.cache.EvalL1(clientIP)
@@ -1054,7 +1127,7 @@ func (h *handler) blockRequest(w http.ResponseWriter, req *http.Request, reason 
 		})
 	}
 
-	w.Header().Set("X-Hermes-Guard", "blocked")
+	h.notifySlack(h.extractClientIP(req), req, reason, 0)
 	w.Header().Set("X-Hermes-Reason", reason)
 
 	if h.config.RedirectURLIfDenied != "" {
@@ -1454,6 +1527,103 @@ func (h *handler) checkHermesAuth(req *http.Request) bool {
 		return secret == h.config.HermesBlockWebhookSecret
 	}
 	return false
+}
+func (h *handler) initRateLimitPaths() {
+	for _, rp := range h.config.RateLimitPaths {
+		re, err := regexp.Compile(rp.Path)
+		if err != nil {
+			h.logger.warn("invalid rate limit path %q: %v", rp.Path, err)
+			continue
+		}
+		h.rateLimitPaths = append(h.rateLimitPaths, struct {
+			re      *regexp.Regexp
+			maxReqs int
+			window  int
+		}{re, rp.MaxReqs, rp.Window})
+	}
+}
+
+func (h *handler) initHoneypotPaths() {
+	for _, pattern := range h.config.HoneypotPaths {
+		re, err := regexp.Compile(pattern)
+		if err != nil { continue }
+		h.honeypotRes = append(h.honeypotRes, re)
+	}
+}
+
+func (h *handler) initHostProfiles() {
+	h.hostProfiles = make(map[string]*hostProfileCfg)
+	for _, hp := range h.config.HostProfiles {
+		h.hostProfiles[hp.Host] = &hostProfileCfg{
+			mode: hp.Mode, minRiskScore: hp.MinRiskScore, blockCountries: hp.BlockCountries,
+		}
+	}
+}
+
+type hostProfileCfg struct {
+	mode           string
+	minRiskScore   float64
+	blockCountries []string
+}
+
+func (h *handler) checkHoneypot(path string) bool {
+	for _, re := range h.honeypotRes {
+		if re.MatchString(path) { return true }
+	}
+	return false
+}
+
+func (h *handler) getPathRateLimit(path string) (int, int) {
+	for _, rp := range h.rateLimitPaths {
+		if rp.re.MatchString(path) { return rp.maxReqs, rp.window }
+	}
+	return 0, 0
+}
+
+func (h *handler) checkAbuseIPDB(ip string) bool {
+	if h.config.AbuseIPDBKey == "" || h.config.AbuseIPDBThreshold <= 0 { return false }
+	u := fmt.Sprintf("https://api.abuseipdb.com/api/v2/check?ipAddress=%s&maxAgeInDays=90", ip)
+	req, _ := http.NewRequest("GET", u, nil)
+	req.Header.Set("Key", h.config.AbuseIPDBKey)
+	req.Header.Set("Accept", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil { return false }
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if data, ok := result["data"].(map[string]interface{}); ok {
+		if score, ok := data["abuseConfidenceScore"].(float64); ok {
+			return int(score) >= h.config.AbuseIPDBThreshold
+		}
+	}
+	return false
+}
+
+func (h *handler) notifySlack(clientIP string, req *http.Request, reason string, riskScore float64) {
+	if h.config.WebhookURL == "" { return }
+	color := "#dc2626"
+	if strings.Contains(reason, "captcha") { color = "#f59e0b" }
+	msg := map[string]interface{}{
+		"attachments": []map[string]interface{}{{
+			"color": color,
+			"title": "Blocked Request",
+			"fields": []map[string]string{
+				{"title": "IP", "value": clientIP, "short": "true"},
+				{"title": "Method", "value": req.Method, "short": "true"},
+				{"title": "Path", "value": req.URL.RequestURI()},
+				{"title": "Host", "value": req.Host, "short": "true"},
+				{"title": "Reason", "value": reason, "short": "true"},
+				{"title": "Risk", "value": fmt.Sprintf("%.2f", riskScore), "short": "true"},
+			},
+			"footer": "Hermes Guard",
+		}},
+	}
+	data, _ := json.Marshal(msg)
+	go func() {
+		resp, err := http.Post(h.config.WebhookURL, "application/json", bytes.NewReader(data))
+		if err != nil { return }
+		resp.Body.Close()
+	}()
 }
 
 func (h *handler) Close() {
