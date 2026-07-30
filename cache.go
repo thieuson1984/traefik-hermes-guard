@@ -202,10 +202,12 @@ func (c *cacheLayer) UnwhitelistIP(ip string) error {
 }
 
 func (c *cacheLayer) WhitelistIP(ip string) error {
+	c.memDel("blk:" + ip)
 	if c.memFallback || c.client == nil {
 		c.memSet("wl:"+ip, true, c.blockTTL)
 		return nil
 	}
+	_ = c.client.cmd("DEL", c.blockedKey(ip))
 	return c.client.cmd("SADD", whitelistKey, ip)
 }
 
