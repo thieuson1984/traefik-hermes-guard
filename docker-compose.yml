@@ -1,0 +1,97 @@
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik-hermes
+    env_file:
+      - .env
+    environment:
+      - HG_HERMES_ENDPOINT=${HG_HERMES_ENDPOINT:-http://hermes-mock:8080}
+      - HG_HERMES_TOKEN=${HG_HERMES_TOKEN:-}
+      - HG_REDIS_ADDR=${HG_REDIS_ADDR:-redis:6379}
+      - HG_REDIS_PASSWORD=${HG_REDIS_PASSWORD:-}
+      - HG_REDIS_DB=${HG_REDIS_DB:-0}
+      - HG_MODE=${HG_MODE:-protect}
+      - HG_LOG_LEVEL=${HG_LOG_LEVEL:-info}
+      - HG_MIN_RISK_SCORE=${HG_MIN_RISK_SCORE:-0.7}
+      - HG_CACHE_TTL=${HG_CACHE_TTL:-3600}
+      - HG_MAX_BODY_SIZE=${HG_MAX_BODY_SIZE:-1048576}
+      - HG_CHALLENGE_URL=${HG_CHALLENGE_URL:-}
+      - HG_TURNSTILE_SITE_KEY=${HG_TURNSTILE_SITE_KEY:-}
+      - HG_TURNSTILE_SECRET_KEY=${HG_TURNSTILE_SECRET_KEY:-}
+      - HG_WEBHOOK_URL=${HG_WEBHOOK_URL:-}
+      - HG_HERMES_BLOCK_WEBHOOK_SECRET=${HG_HERMES_BLOCK_WEBHOOK_SECRET:-}
+      - HG_ADMIN_SECRET=${HG_ADMIN_SECRET:-}
+      - HG_RATE_LIMIT_REQS=${HG_RATE_LIMIT_REQS:-120}
+      - HG_RATE_LIMIT_WINDOW=${HG_RATE_LIMIT_WINDOW:-60}
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--log.level=DEBUG"
+      - "--experimental.localPlugins.hermes-guard.moduleName=github.com/thieuson1984/traefik-hermes-guard"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./:/plugins-local/src/github.com/thieuson1984/traefik-hermes-guard:ro"
+      - "./config/traefik.yml:/etc/traefik/traefik.yml:ro"
+       - "./config/dynamic.yml:/etc/traefik/dynamic.yml:ro"
+       - "./config/hermes-ban.html:/etc/traefik/hermes-ban.html:ro"
+      - "./config/hermes-captcha.html:/etc/traefik/hermes-captcha.html:ro"
+      - "./config/geoip.json:/etc/traefik/geoip.json:ro"
+      - "./config/collections:/etc/traefik/collections:ro"
+      - "./config/profile.json:/etc/traefik/profile.json:ro"
+    networks:
+      - hermes-net
+    labels:
+      - "traefik.enable=true"
+
+  redis:
+    image: redis:7-alpine
+    container_name: hermes-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - hermes-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  whoami:
+    image: traefik/whoami:latest
+    container_name: hermes-whoami
+    networks:
+      - hermes-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.routers.whoami.middlewares=hermes-guard@file"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
+
+  hermes-mock:
+    image: mendhak/http-https-echo:latest
+    container_name: hermes-mock
+    environment:
+      - HTTP_PORT=8080
+    ports:
+      - "8081:8080"
+    networks:
+      - hermes-net
+
+networks:
+  hermes-net:
+    driver: bridge
+
+volumes:
+  redis-data:

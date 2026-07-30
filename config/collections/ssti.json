@@ -1,0 +1,10 @@
+{
+  "category": "ssti",
+  "description": "Server-Side Template Injection patterns",
+  "patterns": [
+    {"name": "SSTI — Generic", "pattern": "(?i)(\\{\\{.*\\}\\}|\\$\\{.*\\}|<%=.*%>|\\{\\%.*\\%\\}|\\#\\{.*\\})", "severity": "high"},
+    {"name": "SSTI — Jinja2/Twig", "pattern": "(?i)(\\{\\{[\\s]*[\\w.]+\\|.*[\\w]+\\}\\}|__class__|__bases__|__mro__|__subclasses__|__globals__|__init__)", "severity": "critical"},
+    {"name": "SSTI — FreeMarker", "pattern": "(?i)(\\$\\{[\\w.]+\\?[\\w]+\\}|new\\(\\)|Runtime|ProcessBuilder)", "severity": "critical"},
+    {"name": "SSTI — Velocity", "pattern": "(?i)(#set\\(|#if\\(|#foreach\\(|#evaluate\\()", "severity": "high"}
+  ]
+}

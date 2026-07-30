@@ -1,0 +1,36 @@
+{
+  "category": "cmd-injection",
+  "description": "Command Injection patterns — Unix shell, Windows cmd, PowerShell",
+  "patterns": [
+    {
+      "name": "CMD Injection — Unix Shell",
+      "pattern": "(?i)(;\\s*(?:cat|ls|rm|wget|curl|nc|bash|sh|whoami|id|uname|tcpdump|ifconfig|ping|nslookup|dig|hostname)\\s|;\\s*(?:python|perl|ruby|php|node)\\s+-[ecr])",
+      "severity": "critical"
+    },
+    {
+      "name": "CMD Injection — Windows Shell",
+      "pattern": "(?i)(;\\s*(?:cmd|powershell|netsh|reg\\s+|schtasks|ipconfig|net\\s+(?:user|localgroup|use|view|share))\\s)",
+      "severity": "critical"
+    },
+    {
+      "name": "CMD Injection — Pipe/Redirection",
+      "pattern": "(?i)(\\|\\|\\s*(?:cat|ls|id|whoami|wget|curl|dir|type)|\\|\\s*(?:cat|ls|id|whoami))",
+      "severity": "critical"
+    },
+    {
+      "name": "CMD Injection — Backtick Subshell",
+      "pattern": "(?i)(`\\s*(?:cat|ls|id|whoami|sleep|ping|curl|wget)\\s)",
+      "severity": "critical"
+    },
+    {
+      "name": "CMD Injection — Dollar Subshell",
+      "pattern": "(?i)(\\$\\(\\s*(?:cat|ls|id|whoami|sleep|ping|curl|wget)\\s)",
+      "severity": "critical"
+    },
+    {
+      "name": "CMD Injection — Netcat Reverse Shell",
+      "pattern": "(?i)(nc\\s+-[elnvz]+\\s+\\d+\\.\\d+\\.\\d+\\.\\d+\\s+\\d+|nc\\s+-[elnvz]+\\s+[a-zA-Z0-9.-]+\\s+\\d+)",
+      "severity": "critical"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+displayName: Hermes Guard
+type: middleware
+import: github.com/thieuson1984/traefik-hermes-guard
+
+summary: "AI-powered security gatekeeper — 3-tier defense with Hermes Agent for real-time threat analysis"
+
+testData:
+  mode: "monitor"
+  silentStartUp: false
+  logLevel: "info"
+  minRiskScore: 0.5
+  cacheTTL: 3600
+  asyncSend: true
+  maxBodySize: 1048576
+  allowLocalRequests: true
+  adminEnabled: false
+  rateLimitReqs: 0
+  rateLimitWindow: 60
+  rateLimitBlockTTL: 300
+
+  # Hermes Agent (disabled for test)
+  hermesEndpoint: ""
+  hermesToken: ""
+  hermesTLSInsecure: false
+  hermesRetryEnabled: false
+  hermesRetryInterval: 30
+  hermesBlockWebhookURL: ""
+  hermesBlockWebhookSecret: ""
+  hermesAnalyzeURL: ""
+  adminSecret: ""
+
+  # Redis (disabled for test)
+  redisAddr: ""
+  redisPassword: ""
+  redisDB: 0
+
+  # Patterns
+  patternsFile: ""
+  patternsWatchSec: 0
+  suspiciousPatterns:
+    - "(?i)(union.*select|select.*from)"
+
+  # Pages
+  banPageFile: ""
+  captchaPageFile: ""
+
+  # Turnstile
+  turnstileSiteKey: ""
+  turnstileSecretKey: ""
+
+  # GeoIP
+  geoipDBFile: ""
+  blockCountries: []
+  challengeCountries: []
+  blackListMode: false
+  addCountryHeader: false
+
+  # Headers
+
+  # IP lists
+  trustedProxies: []
+  ipWhitelist:
+    - "127.0.0.1"
+  ipBlacklist: []
+
+  # Misc
+  webhookURL: ""
+  inspectResponses: false
+  httpStatusCodeDenied: 403
+  redirectUrlIfDenied: ""
+  excludedPathPatterns: []

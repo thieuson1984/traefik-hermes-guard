@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "rules": {
+    "cve": "ban",
+    "sqli": "ban",
+    "xss": "ban",
+    "cmd-injection": "ban",
+    "code-injection": "ban",
+    "webshell": "ban",
+    "nosql-injection": "ban",
+    "ssrf": "ban",
+    "xxe": "ban",
+    "path-traversal": "captcha",
+    "ssti": "captcha",
+    "header-injection": "captcha",
+    "ldap-injection": "captcha",
+    "open-redirect": "captcha",
+    "scanner": "captcha",
+    "geoip": "ban",
+    "rate_limit": "captcha",
+    "malicious_ua": "ban",
+    "fast_path": "ban"
+  },
+  "default_action": "ban"
+}

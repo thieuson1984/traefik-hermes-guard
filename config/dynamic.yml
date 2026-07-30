@@ -1,0 +1,86 @@
+http:
+  middlewares:
+    hermes-guard:
+      plugin:
+        hermes-guard:
+
+          mode: "protect"
+          silentStartUp: false
+
+          logLevel: "info"
+          adminEnabled: true
+
+          # Hermes Agent
+          hermesEndpoint: ""
+          hermesToken: ""
+          hermesTLSInsecure: false
+          hermesTLSCAFile: ""
+          hermesRetryEnabled: true
+          hermesRetryInterval: 30
+          hermesBlockWebhookURL: "/webhooks/traefik-block-events"
+          hermesBlockWebhookSecret: ""
+          hermesAnalyzeURL: "/webhooks/hermes-guard-analyze"
+          adminSecret: ""
+
+          # Redis
+          redisAddr: ""
+          redisPassword: ""
+          redisDB: 0
+
+          minRiskScore: 0.5
+          cacheTTL: 3600
+          asyncSend: true
+          maxBodySize: 1048576
+
+          rateLimitReqs: 120
+          rateLimitWindow: 60
+          rateLimitBlockTTL: 300
+
+          trustedProxies:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+
+          webhookURL: ""
+
+          patternsFile: ""
+          collectionsDir: "/etc/traefik/collections"
+          profileFile: "/etc/traefik/profile.json"
+          patternsWatchSec: 60
+
+          banPageFile: "/etc/traefik/hermes-ban.html"
+          captchaPageFile: "/etc/traefik/hermes-captcha.html"
+
+          turnstileSiteKey: ""
+          turnstileSecretKey: ""
+
+          suspiciousPatterns:
+            - "(?i)(union.*select|select.*from|insert\\s+into|drop\\s+table|delete\\s+from|--[\\s]*$)"
+            - "(?i)(<script|javascript:|onerror\\s*=|onload\\s*=|eval\\s*\\(|document\\.cookie)"
+            - "(?i)(\\.\\./|\\.\\.\\\\|%2e%2e/|%2e%2e%5c)"
+            - "(?i)(;\\s*(?:cat|ls|rm|wget|curl|nc|bash|sh|cmd|powershell|whoami|id)\\s)"
+            - "(?i)((?:xml|external|entity)|<!ENTITY|SYSTEM\\s+\")"
+            - "(?i)(\\b(?:and|or)\\b\\s+['\"]?\\d+['\"]?\\s*=\\s*['\"]?\\d+['\"]?)"
+            - "(?i)((?:execute|exec|sp_executesql|xp_cmdshell))"
+            - "(?i)(<\\?php|passthru|shell_exec|system\\s*\\()"
+
+          ipWhitelist:
+            - "127.0.0.1"
+
+          ipBlacklist: []
+
+          geoipDBFile: "/etc/traefik/geoip.json"
+          blockCountries: []
+          challengeCountries: []
+
+          inspectResponses: false
+          allowLocalRequests: false
+          blackListMode: false
+          addCountryHeader: false
+          httpStatusCodeDenied: 403
+          redirectUrlIfDenied: ""
+          fallbackWhenError: true
+
+          excludedPathPatterns:
+            - "^[^/]+/health$"
+            - "^[^/]+/ping$"

@@ -1,0 +1,10 @@
+{
+  "category": "ssrf",
+  "description": "Server-Side Request Forgery patterns",
+  "patterns": [
+    {"name": "SSRF — Internal Schemes", "pattern": "(?i)((?:file|gopher|dict|ldap|ftp|tftp|php|jar)://(?:127\\.|10\\.|172\\.(?:1[6-9]|2[0-9]|3[01])\\.|192\\.168\\.|0\\.0\\.0\\.0|localhost|\\[::1\\]|169\\.254\\.))", "severity": "high"},
+    {"name": "SSRF — Cloud Metadata", "pattern": "(?i)(169\\.254\\.169\\.254|metadata\\.google\\.internal|100\\.100\\.100\\.200)", "severity": "critical"},
+    {"name": "SSRF — URL in parameter", "pattern": "(?i)((?:url|uri|path|dest|redirect|proxy|callback|return|next|goto|endpoint)=https?://[^\\s&]+)", "severity": "medium"},
+    {"name": "SSRF — Encoded IP", "pattern": "(?i)(http://(?:2130706433|2852039166|0x7f\\.0x0\\.0x0\\.0x1|0177\\.0\\.0\\.01))", "severity": "high"}
+  ]
+}

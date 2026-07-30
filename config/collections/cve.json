@@ -1,0 +1,131 @@
+{
+  "category": "cve",
+  "description": "CVE exploitation signatures — known vulnerability probes and attacks",
+  "patterns": [
+    {
+      "name": "CVE-2021-44228 — Log4Shell (JNDI injection)",
+      "pattern": "(?i)(\\$\\{(?:jndi|java|env|sys|lower|upper):(?:ldap|ldaps|rmi|dns|nis|iiop|corba|nds|http)s?://[^}]+\\})",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2021-45046 — Log4Shell bypass",
+      "pattern": "(?i)(\\$\\{\\s*\\$\\{|\\$\\{\\s*::-|\\$\\{\\s*env:|\\$\\{\\s*::-j)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2022-22965 — Spring4Shell",
+      "pattern": "(?i)(class\\.module\\.classLoader\\.resources\\.context\\.parent\\.pipeline\\.first\\.(?:pattern|suffix|directory|prefix))",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2022-22963 — Spring Cloud Function",
+      "pattern": "(?i)(spring\\.cloud\\.function\\.routing-expression|T\\(java\\.lang\\.Runtime\\)\\.getRuntime)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2014-6271 — Shellshock (Bash)",
+      "pattern": "(?i)(\\(\\)\\s*\\{\\s*:|\\}\\s*;\\s*(?:/bin/|/usr/bin/|uname\\s+-a|cat\\s+/etc/passwd|wget\\s+|curl\\s+))",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-44487 — HTTP/2 Rapid Reset",
+      "pattern": "(?i)(RST_STREAM|GOAWAY)",
+      "severity": "medium"
+    },
+    {
+      "name": "CVE-2021-41773 — Apache Path Traversal",
+      "pattern": "(?i)(cgi-bin/\\.%2e/|\\.%2e/cgi-bin|/icons/.*\\.%2e)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2022-1388 — F5 BIG-IP iControl REST",
+      "pattern": "(?i)(/mgmt/tm/util/bash|/mgmt/tm/.*X-F5-Auth-Token|X-F5-Auth-Token\\s*:\\s*[\\w]+)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-23752 — Joomla API",
+      "pattern": "(?i)(/api/index\\.php/v1/(?:config|users|content)/\\?public=true)",
+      "severity": "high"
+    },
+    {
+      "name": "CVE-2021-26084 — Confluence OGNL",
+      "pattern": "(?i)(/pages/createpage-entervariables\\.action|@com\\.atlassian\\.confluence)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-22527 — Confluence RCE",
+      "pattern": "(?i)(/template/aui/text-inline\\.vmap.*\\$\\(|#(?:request|attr|tag)\\s*\\[)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2021-21972 — vSphere Client RCE",
+      "pattern": "(?i)(/ui/vropspluginui/rest/services/uploadova|/uploadova)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2022-41082 — Exchange OWASSRF",
+      "pattern": "(?i)(/autodiscover/autodiscover\\.json.*powershell|X-OWA-ExplicitLogonUser)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-27350 — PaperCut NG/MF",
+      "pattern": "(?i)(/app\\?service=page/SetupCompleted|/custom-report-example\\?)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2022-47966 — ManageEngine SAML RCE",
+      "pattern": "(?i)(/saml/(?:idp|sp)/.*\\?SAMLRequest=|/SamlResponseServlet)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-46604 — ActiveMQ RCE",
+      "pattern": "(?i)(OpenWire|class.*org\\.springframework|ClassPathXmlApplicationContext)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2021-40438 — Apache mod_proxy SSRF",
+      "pattern": "(?i)(unix:/run/|unix:/var/run/|unix:/tmp/)",
+      "severity": "high"
+    },
+    {
+      "name": "CVE-2022-24706 — Apache CouchDB RCE",
+      "pattern": "(?i)(/_users/org\\.couchdb\\.user:|/_node/\\w+/_config/query_servers)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-32315 — Openfire XMPP",
+      "pattern": "(?i)(/setup/setup-s/%u002e%u002e/%u002e%u002e/log\\.jsp|/plugins/search/.*xml)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2022-26134 — Confluence OGNL Inject",
+      "pattern": "(?i)(/%24%7B|%5Cu002e%5Cu002e|\\.\\{with|#request\\.get)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-34048 — vCenter Out-of-Bounds Write",
+      "pattern": "(?i)(/ui/login\\?.*#/vsc\\?vscUrl)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2020-1472 — ZeroLogon probe",
+      "pattern": "(?i)(NetrServerPasswordSet2|NetrServerAuthenticate3)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2021-42237 — Sitecore XP RCE",
+      "pattern": "(?i)(/sitecore/shell/Applications/Reports/|/sitecore/admin/cache\\.aspx|\\.ashx.*__RequestVerificationToken=)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2023-3519 — Citrix Gateway RCE",
+      "pattern": "(?i)(/gwtest/formssso\\?event=start&target=|\\.xml\\?.*%25%37%33)",
+      "severity": "critical"
+    },
+    {
+      "name": "CVE-2024-1709 — Ivanti Connect Secure",
+      "pattern": "(?i)(/api/v1/totp/|/dana-na/auth/saml/|/dana-na/auth/url_[\\w]+/welcome\\.cgi)",
+      "severity": "critical"
+    }
+  ]
+}

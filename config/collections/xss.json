@@ -1,0 +1,51 @@
+{
+  "category": "xss",
+  "description": "Cross-Site Scripting patterns — reflected, stored, DOM-based, event handlers",
+  "patterns": [
+    {
+      "name": "XSS — Script Tags",
+      "pattern": "(?i)(<script[^>]*>|</script>|<script)",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — JavaScript URIs",
+      "pattern": "(?i)(javascript\\s*:|vbscript\\s*:)",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — Event Handlers",
+      "pattern": "(?i)(on(?:error|load|click|mouseover|focus|blur|change|submit|key)\\s*=|onabort\\s*=|oncanplay\\s*=|oncut\\s*=|ondrag\\s*=|oninput\\s*=|onpause\\s*=|onplay\\s*=|onprogress\\s*=|onseek\\s*=|ontoggle\\s*=|onwheel\\s*=)",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — eval/Function/setTimeout",
+      "pattern": "(?i)(eval\\s*\\(|Function\\s*\\(|setTimeout\\s*\\(|setInterval\\s*\\(|new\\s+Function)",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — document.cookie/write",
+      "pattern": "(?i)(document\\.cookie|document\\.write|document\\.domain|window\\.location|window\\.open\\s*\\()",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — IMG/IFRAME/EMBED injection",
+      "pattern": "(?i)(<img[^>]+src\\s*=\\s*['\"]?javascript|<iframe[^>]*src\\s*=|srcdoc\\s*=|<embed[^>]*src\\s*=|<object[^>]*data\\s*=)",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — SVG injection",
+      "pattern": "(?i)(<svg[^>]*(?:onload|onbegin|onend|onfocusin)\\s*=)",
+      "severity": "medium"
+    },
+    {
+      "name": "XSS — Encoded bypass",
+      "pattern": "(?i)(%3Cscript|&#x3C;script|&#60;script|\\u003Cscript|\\\\x3Cscript|data:text/html)",
+      "severity": "high"
+    },
+    {
+      "name": "XSS — CSS injection",
+      "pattern": "(?i)(expression\\s*\\(|behavior\\s*:|binding\\s*:|<style[^>]*>.*@import)",
+      "severity": "medium"
+    }
+  ]
+}

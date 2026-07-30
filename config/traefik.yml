@@ -1,0 +1,30 @@
+log:
+  level: DEBUG
+
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: hermes-net
+  file:
+    filename: "/etc/traefik/dynamic.yml"
+    watch: true
+
+experimental:
+  localPlugins:
+    hermes-guard:
+      moduleName: github.com/thieuson1984/traefik-hermes-guard
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true

@@ -1,0 +1,41 @@
+{
+  "category": "sqli",
+  "description": "SQL Injection patterns — union, blind, error-based, tautology, stored procedures",
+  "patterns": [
+    {
+      "name": "SQLi — UNION SELECT",
+      "pattern": "(?i)(union\\s+(all\\s+)?select|select.*from|insert\\s+into|drop\\s+table|delete\\s+from|update\\s+\\w+\\s+set|--[\\s]*$|/\\*.*\\*/)",
+      "severity": "high"
+    },
+    {
+      "name": "SQLi — Tautology",
+      "pattern": "(?i)(\\b(?:and|or)\\b\\s+['\"]?\\d+['\"]?\\s*=\\s*['\"]?\\d+['\"]?|['\"]\\s*=\\s*['\"])",
+      "severity": "high"
+    },
+    {
+      "name": "SQLi — Stored Procedures",
+      "pattern": "(?i)(execute|exec\\s*\\(|sp_executesql|xp_cmdshell|sp_configure)",
+      "severity": "critical"
+    },
+    {
+      "name": "SQLi — WAITFOR DELAY (Time-based)",
+      "pattern": "(?i)(waitfor\\s+delay\\s+['\"]0:0:\\d+['\"]|benchmark\\s*\\(\\d+,\\s*md5|sleep\\s*\\(\\d+\\)|pg_sleep\\s*\\(\\d+\\))",
+      "severity": "critical"
+    },
+    {
+      "name": "SQLi — Information Schema",
+      "pattern": "(?i)(information_schema|table_name|column_name|group_concat|concat\\s*\\()",
+      "severity": "medium"
+    },
+    {
+      "name": "SQLi — System Tables",
+      "pattern": "(?i)(sys\\.(?:tables|columns|objects)|mysql\\.(?:user|db)|pg_(?:class|attribute|tables))",
+      "severity": "high"
+    },
+    {
+      "name": "SQLi — Inline comments bypass",
+      "pattern": "(?i)(/\\*!\\d+|union/\\*.*\\*/select|sel\\%65ct)",
+      "severity": "high"
+    }
+  ]
+}

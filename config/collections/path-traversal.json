@@ -1,0 +1,31 @@
+{
+  "category": "path-traversal",
+  "description": "Path Traversal / Directory Traversal / LFI patterns",
+  "patterns": [
+    {
+      "name": "Path Traversal — Dot-Dot-Slash",
+      "pattern": "(?i)(\\.\\./|\\.\\.\\\\|%2e%2e/|%2e%2e%5c|%252e%252e)",
+      "severity": "high"
+    },
+    {
+      "name": "Path Traversal — System Files",
+      "pattern": "(?i)((?:/|\\\\)(?:etc/passwd|etc/shadow|etc/hosts|etc/group|boot\\.ini|win\\.ini|windows/win\\.ini|windows/system32|proc/self/environ|proc/\\d+/cmdline))",
+      "severity": "critical"
+    },
+    {
+      "name": "LFI — PHP Wrappers",
+      "pattern": "(?i)(php://(?:filter|input|fd|temp|memory|data)|expect://|zip://|phar://|ogg://)",
+      "severity": "critical"
+    },
+    {
+      "name": "Path Traversal — Encoded variants",
+      "pattern": "(?i)(%c0%ae%c0%ae/|%uff0e%uff0e/|\\\\.\\\\./|\\.\\\\.\\\\|%5c%2e%2e)",
+      "severity": "high"
+    },
+    {
+      "name": "Path Traversal — Unicode bypass",
+      "pattern": "(?i)((?:\\uff0e){2,}|(?:%c0%\\.){2,}|(?:%uff0e){2,}(?:/|\\\\))",
+      "severity": "high"
+    }
+  ]
+}

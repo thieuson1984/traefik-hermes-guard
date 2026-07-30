@@ -1,0 +1,26 @@
+{
+  "category": "xxe",
+  "description": "XML External Entity Injection patterns",
+  "patterns": [
+    {
+      "name": "XXE — ENTITY declaration",
+      "pattern": "(?i)(<!ENTITY\\s+\\w+\\s+(?:SYSTEM|PUBLIC)\\s+['\"][^'\"]+['\"])",
+      "severity": "critical"
+    },
+    {
+      "name": "XXE — Parameter Entity",
+      "pattern": "(?i)(<!ENTITY\\s+%\\s+\\w+\\s+)",
+      "severity": "critical"
+    },
+    {
+      "name": "XXE — DOCTYPE injection",
+      "pattern": "(?i)(<!DOCTYPE\\s+\\w+\\s+\\[\\s*<!ENTITY)",
+      "severity": "high"
+    },
+    {
+      "name": "XXE — XInclude",
+      "pattern": "(?i)(xmlns:xi\\s*=\\s*['\"]http://www\\.w3\\.org/2001/XInclude['\"]|xi:include\\s+)",
+      "severity": "medium"
+    }
+  ]
+}
