@@ -13,8 +13,8 @@ func TestCreateConfig(t *testing.T) {
 	if cfg.Mode != "monitor" {
 		t.Errorf("expected default mode 'monitor', got '%s'", cfg.Mode)
 	}
-	if cfg.MinRiskScore != 0.7 {
-		t.Errorf("expected default minRiskScore 0.7, got %f", cfg.MinRiskScore)
+	if cfg.MinRiskScore != 0.5 {
+		t.Errorf("expected default minRiskScore 0.5, got %f", cfg.MinRiskScore)
 	}
 	if cfg.RateLimitReqs != 0 {
 		t.Errorf("expected default rateLimitReqs 0, got %d", cfg.RateLimitReqs)
@@ -38,7 +38,7 @@ func TestDetectSQLInjection(t *testing.T) {
 		wantRisk bool
 	}{
 		{"normal page", "/home", false},
-		{"SQLi union select", "/products?id=1 UNION SELECT password FROM users", true},
+		{"SQLi union select", "/products?id=1%20UNION%20SELECT%20password%20FROM%20users", true},
 		{"XSS script", "/search?q=<script>alert(1)</script>", true},
 		{"path traversal", "/download?file=../../../etc/passwd", true},
 		{"clean API", "/api/v1/users", false},
@@ -155,9 +155,9 @@ func TestDecoder(t *testing.T) {
 }
 
 func TestPatternReload(t *testing.T) {
-	d := newDetector(nil, "config/patterns.json", "", 1048576, newLogger(LogDebug))
+	d := newDetector(nil, "", "config/collections", 1048576, newLogger(LogDebug))
 	if len(d.patterns) == 0 {
-		t.Error("expected patterns loaded from file")
+		t.Error("expected patterns loaded from collections")
 	}
 	if err := d.Reload(); err != nil {
 		t.Errorf("Reload() error: %v", err)
@@ -176,8 +176,8 @@ func TestMaskEndpoint(t *testing.T) {
 
 func TestDefaultRiskScoring(t *testing.T) {
 	rs := defaultRiskScoring()
-	if rs.URLMatchWeight != 0.30 {
-		t.Errorf("expected 0.30, got %.2f", rs.URLMatchWeight)
+	if rs.URLMatchWeight != 0.70 {
+		t.Errorf("expected 0.70, got %.2f", rs.URLMatchWeight)
 	}
 }
 

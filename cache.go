@@ -71,6 +71,8 @@ func newCacheLayer(addr, password string, db, blockTTL int, tlsEnabled, tlsSkipV
 		} else {
 			logr.info("Redis connected: %s", addr)
 		}
+	} else {
+		cl.memFallback = true
 	}
 
 	go cl.memCleanupLoop()
