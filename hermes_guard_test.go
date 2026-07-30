@@ -237,3 +237,37 @@ func TestRateLimiting(t *testing.T) {
 		}
 	}
 }
+
+func TestHealthCheck(t *testing.T) {
+	cfg := &Config{Mode: string(ModeProtect), MaxBodySize: 1048576, AdminEnabled: true, LogLevel: string(LogDebug)}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	ctx := context.Background()
+	h, _ := New(ctx, next, cfg, "test")
+	req := httptest.NewRequest("GET", "http://example.com/.hermes-guard/health", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("health: expected 200, got %d", rec.Code)
+	}
+}
+
+func TestAPIAuth(t *testing.T) {
+	cfg := &Config{Mode: string(ModeProtect), MaxBodySize: 1048576, AdminSecret: "test", LogLevel: string(LogDebug)}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	h, _ := New(context.Background(), next, cfg, "test")
+	req := httptest.NewRequest("GET", "http://example.com/.hermes-guard/api/status?ip=1.2.3.4", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rec.Code)
+	}
+	req2 := httptest.NewRequest("GET", "http://example.com/.hermes-guard/api/status?ip=1.2.3.4&secret=test", nil)
+	req2.RemoteAddr = "127.0.0.1:12345"
+	rec2 := httptest.NewRecorder()
+	h.ServeHTTP(rec2, req2)
+	if rec2.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec2.Code)
+	}
+}

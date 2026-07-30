@@ -751,6 +751,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Health check (no auth required)
+	if req.URL.Path == "/.hermes-guard/health" {
+		h.healthCheck(w, req)
+		return
+	}
+
 	// Admin dashboard & metrics
 	if h.config.AdminEnabled {
 		if req.URL.Path == "/.hermes-guard/admin" {
@@ -1564,6 +1570,21 @@ func (h *handler) isCollectionLoaded(name string) bool {
 	}
 	_, err := os.Stat(dir + "/" + name + ".json")
 	return err == nil
+}
+
+func (h *handler) healthCheck(w http.ResponseWriter, req *http.Request) {
+	redisOK := "ok"
+	if h.cache != nil {
+		if err := h.cache.Ping(); err != nil {
+			redisOK = "error: " + err.Error()
+		}
+	}
+	hermesOK := "not configured"
+	if h.config.HermesEndpoint != "" {
+		hermesOK = "connected"
+	}
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"status":"ok","redis":"%s","hermes":"%s","mode":"%s","version":"2.0.0"}`, redisOK, hermesOK, h.config.Mode)
 }
 
 func (h *handler) checkAdminAuth(req *http.Request) bool {
