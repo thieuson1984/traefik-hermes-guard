@@ -24,7 +24,7 @@
     },
     {
       "name": "Path Traversal — Unicode bypass",
-      "pattern": "(?i)((?:\\uff0e){2,}|(?:%c0%\\.){2,}|(?:%uff0e){2,}(?:/|\\\\))",
+      "pattern": "(?i)((?:．){2,}|(?:%c0%\\.){2,}|(?:%uff0e){2,}(?:/|\\\\))",
       "severity": "high"
     }
   ]

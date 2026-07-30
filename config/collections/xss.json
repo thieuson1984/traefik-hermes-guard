@@ -39,7 +39,7 @@
     },
     {
       "name": "XSS — Encoded bypass",
-      "pattern": "(?i)(%3Cscript|&#x3C;script|&#60;script|\\u003Cscript|\\\\x3Cscript|data:text/html)",
+      "pattern": "(?i)(%3Cscript|&#x3C;script|&#60;script|<script|data:text/html|%3C|<)",
       "severity": "high"
     },
     {
