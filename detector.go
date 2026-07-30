@@ -47,39 +47,37 @@ type detector struct {
 	logger        *logger
 	patternStrs   []string
 	patternsPath  string
-	collections   []string
 	collDir       string
 }
 
-func newDetector(patternStrs []string, patternsFilePath string, collections []string, collectionsDir string, maxBodySize int64, logr *logger) *detector {
+func newDetector(patternStrs []string, patternsFilePath string, collectionsDir string, maxBodySize int64, logr *logger) *detector {
 	d := &detector{
 		maxBody:      maxBodySize,
 		scoring:      defaultRiskScoring(),
 		logger:       logr,
 		patternStrs:  patternStrs,
 		patternsPath: patternsFilePath,
-		collections:  collections,
 		collDir:      collectionsDir,
 	}
-	d.load(collections, collectionsDir)
+	d.load()
 	return d
 }
 
-func (d *detector) load(collections []string, collectionsDir string) {
+func (d *detector) load() {
 	d.patterns = nil
 	d.patternCats = nil
 	d.maliciousUAs = nil
 
 	// Auto-load all JSON files from collections directory
-	if collectionsDir != "" {
-		if entries, err := os.ReadDir(collectionsDir); err == nil {
+	if d.collDir != "" {
+		if entries, err := os.ReadDir(d.collDir); err == nil {
 			total := 0
 			loaded := 0
 			for _, e := range entries {
 				if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 					continue
 				}
-				path := collectionsDir + "/" + e.Name()
+				path := d.collDir + "/" + e.Name()
 				pf, err := loadPatternsFile(path)
 				if err != nil {
 					d.logger.warn("failed to load collection %q: %v", e.Name(), err)
@@ -98,7 +96,7 @@ func (d *detector) load(collections []string, collectionsDir string) {
 				loaded++
 			}
 			if total > 0 {
-				d.logger.info("loaded %d patterns from %d collections in %s", total, loaded, collectionsDir)
+				d.logger.info("loaded %d patterns from %d collections in %s", total, loaded, d.collDir)
 				return
 			}
 		}
@@ -155,7 +153,7 @@ func (d *detector) load(collections []string, collectionsDir string) {
 
 func (d *detector) Reload() error {
 	d.logger.info("hot-reloading patterns...")
-	d.load(d.collections, d.collDir)
+	d.load()
 	return nil
 }
 

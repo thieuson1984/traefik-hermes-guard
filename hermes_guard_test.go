@@ -30,7 +30,7 @@ func TestDetectSQLInjection(t *testing.T) {
 		"(?i)(<script|javascript:)",
 		"(?i)(\\.\\./|\\.\\.\\\\)",
 	}
-	d := newDetector(patterns, "", nil, "", 1048576, newLogger(LogDebug))
+	d := newDetector(patterns, "", "", 1048576, newLogger(LogDebug))
 
 	tests := []struct {
 		name     string
@@ -56,7 +56,7 @@ func TestDetectSQLInjection(t *testing.T) {
 }
 
 func TestDetectMaliciousUserAgent(t *testing.T) {
-	d := newDetector(nil, "", nil, "", 1048576, newLogger(LogDebug))
+	d := newDetector(nil, "", "", 1048576, newLogger(LogDebug))
 	tests := []struct {
 		name     string
 		ua       string
@@ -155,7 +155,7 @@ func TestDecoder(t *testing.T) {
 }
 
 func TestPatternReload(t *testing.T) {
-	d := newDetector(nil, "config/patterns.json", nil, "", 1048576, newLogger(LogDebug))
+	d := newDetector(nil, "config/patterns.json", "", 1048576, newLogger(LogDebug))
 	if len(d.patterns) == 0 {
 		t.Error("expected patterns loaded from file")
 	}

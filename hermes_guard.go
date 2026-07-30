@@ -44,7 +44,6 @@ type Config struct {
 	RateLimitWindow       int      `json:"rateLimitWindow,omitempty"`
 	RateLimitBlockTTL     int      `json:"rateLimitBlockTTL,omitempty"`
 	PatternsFile          string   `json:"patternsFile,omitempty"`
-	Collections           []string `json:"collections,omitempty"`
 	CollectionsDir        string   `json:"collectionsDir,omitempty"`
 	ProfileFile           string   `json:"profileFile,omitempty"`
 	PatternsWatchSec      int      `json:"patternsWatchSec,omitempty"`
@@ -241,7 +240,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	h.parseIPLists()
 	h.detector = newDetector(config.SuspiciousPatterns, config.PatternsFile,
-		config.Collections, config.CollectionsDir, config.MaxBodySize, logr)
+		config.CollectionsDir, config.MaxBodySize, logr)
 	h.loadPages()
 	h.loadGeoIP()
 	h.loadProfile()
