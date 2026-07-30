@@ -1108,15 +1108,13 @@ func (h *handler) handleTurnstile(w http.ResponseWriter, req *http.Request, toke
 		if h.cache != nil {
 			_ = h.cache.UnblockIP(clientIP)
 			_ = h.cache.ClearChallenge(clientIP)
-			_ = h.cache.WhitelistIP(clientIP)
 			_ = h.cache.ResetTurnstileCounter(clientIP)
 		}
 		cleanURL := stripQueryParam(req.URL, "hg_token")
 		if h.cache != nil {
 			blocked, _ := h.cache.IsBlocked(clientIP)
-			whitelisted, _ := h.cache.IsWhitelisted(clientIP)
-			h.logger.info("captcha passed: ip=%s blocked=%v whitelisted=%v url=%s",
-				clientIP, blocked, whitelisted, cleanURL.String())
+			h.logger.info("captcha passed: ip=%s blocked=%v url=%s",
+				clientIP, blocked, cleanURL.String())
 		}
 		http.Redirect(w, req, cleanURL.String(), http.StatusFound)
 		return
