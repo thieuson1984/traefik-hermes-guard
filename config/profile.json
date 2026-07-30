@@ -1,7 +1,6 @@
 {
   "version": 1,
   "rules": {
-    "cve": "ban",
     "sqli": "ban",
     "xss": "ban",
     "cmd-injection": "ban",
