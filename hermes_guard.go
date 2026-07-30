@@ -958,7 +958,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Honeypot detection
-	if h.checkHoneypot(req.URL.Path) {
+	if len(h.honeypotRes) > 0 && h.checkHoneypot(req.URL.Path) {
 		h.logger.warn("HONEYPOT: ip=%s path=%s", clientIP, req.URL.RequestURI())
 		h.blockRequest(w, req, "honeypot:"+req.URL.Path)
 		h.notifySlack(clientIP, req, "honeypot:"+req.URL.Path, 1.0)
