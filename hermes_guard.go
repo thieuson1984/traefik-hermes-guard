@@ -896,6 +896,37 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// ---- Layer 1: Lua L1 (blocklist + whitelist) ----
+	if h.cache != nil {
+		blocked, whitelisted, _, err := h.cache.EvalL1(clientIP)
+		if err == nil {
+			h.logger.debug("L1: ip=%s blocked=%v whitelisted=%v err=%v", clientIP, blocked, whitelisted, err)
+			if blocked {
+				h.blockRequest(w, req, "cache_blacklist")
+				return
+			}
+			if whitelisted || h.matchesStaticWhitelist(clientIP) {
+				h.passThrough(w, req)
+				return
+			}
+		} else {
+			h.logger.warn("L1 eval failed: ip=%s err=%v — using fallback", clientIP, err)
+		}
+	}
+
+	// Fallback whitelist check (non-Lua path)
+	if h.cache != nil {
+		if blocked, _ := h.cache.IsBlocked(clientIP); blocked {
+			h.blockRequest(w, req, "cache_blacklist_fallback")
+			return
+		}
+		if whitelisted, _ := h.cache.IsWhitelisted(clientIP); whitelisted {
+			h.logger.info("L1 fallback: ip=%s whitelisted=true — passing through", clientIP)
+			h.passThrough(w, req)
+			return
+		}
+	}
+
 	// ---- Layer 1: Rate Limiting ----
 	if h.config.RateLimitReqs > 0 && h.cache != nil {
 		if allowed, _ := h.cache.RateLimitCheck(clientIP, h.config.RateLimitReqs, h.config.RateLimitWindow); !allowed {
