@@ -1623,7 +1623,11 @@ func (h *handler) geoipUpdateLoop() {
 
 func (h *handler) extractJA3(req *http.Request) string {
 	ua := req.UserAgent()
-	return fmt.Sprintf("%s_%s_%s", req.Method, req.Proto, ua[:len(ua)])
+	maxLen := 64
+	if len(ua) > maxLen {
+		ua = ua[:maxLen]
+	}
+	return fmt.Sprintf("%s_%s_%s", req.Method, req.Proto, ua)
 }
 
 func (h *handler) recordHermesFeedback(hermesVerdict string, actualMatch bool) {
@@ -1709,7 +1713,8 @@ func (h *handler) checkAbuseIPDB(ip string) bool {
 	req, _ := http.NewRequest("GET", u, nil)
 	req.Header.Set("Key", h.config.AbuseIPDBKey)
 	req.Header.Set("Accept", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil { return false }
 	defer resp.Body.Close()
 	var result map[string]interface{}

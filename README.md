@@ -215,6 +215,78 @@ http:
 }
 ```
 
+## Advanced Features
+
+### Rate Limit by Path
+```yaml
+rateLimitPaths:
+  - {path: "/login", maxReqs: 5, window: 60}
+  - {path: "/api", maxReqs: 60, window: 60}
+```
+
+### Honeypot Mode
+```yaml
+honeypotPaths:
+  - "/wp-admin"
+  - "/\.env$"
+```
+Alerts Hermes + blocks immediately on access.
+
+### AbuseIPDB Reputation
+```yaml
+abuseIPDBKey: "your-api-key"
+abuseIPDBThreshold: 80
+```
+Checks IP against AbuseIPDB on first request. Blocks if confidence score ≥ threshold.
+
+### Multi-Tenancy Profiles
+```yaml
+hostProfiles:
+  - {host: "api.example.com", mode: "monitor", minRiskScore: 0.3}
+  - {host: "admin.example.com", mode: "protect", minRiskScore: 0.7, blockCountries: ["CN","RU"]}
+```
+
+### Slack/Discord Webhook
+```yaml
+webhookURL: "https://hooks.slack.com/services/..."
+```
+Formatted messages with color-coded fields (blocked=red, challenged=yellow).
+
+### GeoIP Auto-Update
+```yaml
+geoipUpdateURL: "https://example.com/geoip.json"
+geoipUpdateIntervalH: 24
+```
+Cron goroutine fetches updated geoip.json periodically.
+
+### JA3 Fingerprinting
+```yaml
+ja3BlockList:
+  - "GET_HTTP/1.1_curl/7.88"
+  - "POST_HTTP/1.1_python-requests/2"
+```
+Blocks known bot fingerprints before pattern detection.
+
+### Hermes AI Feedback Loop
+```yaml
+hermesFeedbackEnabled: true
+```
+Tracks Hermes block accuracy at `/.hermes-guard/feedback?secret=...`.
+
+```json
+{
+  "ip": "...",
+  "path": "/...",
+  "method": "GET",
+  "host": "example.com",
+  "risk_score": 0.70,
+  "categories": ["sqli"],
+  "matched_patterns": ["UNION SELECT"],
+  "body_snippet": "...",
+  "user_agent": "..."
+}
+```
+
 ## Collections (15 categories, 145+ patterns)
 
 Drop `.json` files into `config/collections/`:
