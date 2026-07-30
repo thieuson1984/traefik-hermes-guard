@@ -2,6 +2,7 @@ package traefik_hermes_guard
 
 import (
 	"bufio"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -38,13 +39,15 @@ const (
 )
 
 type respClient struct {
-	mu       sync.Mutex
-	addr     string
-	password string
-	db       int
-	pool     chan *respConn
-	timeout  time.Duration
-	closed   bool
+	mu          sync.Mutex
+	addr        string
+	password    string
+	db          int
+	pool        chan *respConn
+	timeout     time.Duration
+	closed      bool
+	useTLS      bool
+	tlsSkipVerify bool
 }
 
 type respConn struct {
@@ -52,13 +55,15 @@ type respConn struct {
 	reader *bufio.Reader
 }
 
-func newRESPClient(addr, password string, db int) *respClient {
+func newRESPClient(addr, password string, db int, tlsEnabled bool, tlsSkipVerify bool) *respClient {
 	c := &respClient{
-		addr:     addr,
-		password: password,
-		db:       db,
-		pool:     make(chan *respConn, poolSize),
-		timeout:  defaultTimeout,
+		addr:           addr,
+		password:       password,
+		db:             db,
+		pool:           make(chan *respConn, poolSize),
+		timeout:        defaultTimeout,
+		useTLS:         tlsEnabled,
+		tlsSkipVerify:  tlsSkipVerify,
 	}
 	return c
 }
@@ -97,7 +102,15 @@ func (c *respClient) discardConn(rc *respConn) {
 }
 
 func (c *respClient) dial() (*respConn, error) {
-	conn, err := net.DialTimeout("tcp", c.addr, redisDialTimeout)
+	var conn net.Conn
+	var err error
+
+	if c.useTLS {
+		tlsCfg := &tls.Config{InsecureSkipVerify: c.tlsSkipVerify}
+		conn, err = tls.DialWithDialer(&net.Dialer{Timeout: redisDialTimeout}, "tcp", c.addr, tlsCfg)
+	} else {
+		conn, err = net.DialTimeout("tcp", c.addr, redisDialTimeout)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("redis dial %s: %w", c.addr, err)
 	}

@@ -1,0 +1,48 @@
+# Production profile — strict mode
+http:
+  middlewares:
+    hermes-guard:
+      plugin:
+        hermes-guard:
+          mode: "protect"
+          minRiskScore: 0.5
+          cacheTTL: 3600
+          logLevel: "warn"
+          adminEnabled: true
+          fallbackWhenError: true
+          silentStartUp: true
+          allowLocalRequests: false
+
+          redisAddr: "redis:6379"
+          redisDB: 0
+
+          collectionsDir: "/etc/traefik/collections"
+          profileFile: "/etc/traefik/profile.json"
+          patternsWatchSec: 300
+
+          rateLimitReqs: 120
+          rateLimitWindow: 60
+          rateLimitBlockTTL: 600
+
+          rateLimitPaths:
+            - {path: "/login", maxReqs: 5, window: 60}
+            - {path: "/api", maxReqs: 60, window: 60}
+
+          turnstileSiteKey: "your-turnstile-site-key"
+          turnstileSecretKey: "your-turnstile-secret-key"
+
+          blockCountries: ["CN", "RU", "KP", "IR"]
+          blackListMode: true
+
+          excludedPathPatterns:
+            - "^[^/]+/health$"
+            - "^[^/]+/metrics$"
+
+          adminSecret: "your-admin-secret"
+
+          honeypotPaths:
+            - "/wp-admin"
+            - "/\.env$"
+            - "/config\.php$"
+
+          inspectResponses: true

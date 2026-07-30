@@ -50,7 +50,7 @@ type cacheStats struct {
 	redisErrs int64
 }
 
-func newCacheLayer(addr, password string, db, blockTTL int, logr *logger) *cacheLayer {
+func newCacheLayer(addr, password string, db, blockTTL int, tlsEnabled, tlsSkipVerify bool, logr *logger) *cacheLayer {
 	if blockTTL <= 0 {
 		blockTTL = defaultBlockTTL
 	}
@@ -63,7 +63,7 @@ func newCacheLayer(addr, password string, db, blockTTL int, logr *logger) *cache
 	}
 
 	if addr != "" {
-		cl.client = newRESPClient(addr, password, db)
+		cl.client = newRESPClient(addr, password, db, tlsEnabled, tlsSkipVerify)
 		if err := cl.client.cmd("PING"); err != nil {
 			logr.warn("Redis unavailable (%s): %v — using in-memory cache fallback", addr, err)
 			cl.client = nil

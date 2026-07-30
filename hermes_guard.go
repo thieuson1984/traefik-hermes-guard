@@ -86,6 +86,20 @@ type Config struct {
 	GeoIPUpdateIntervalH  int      `json:"geoipUpdateIntervalH,omitempty"`
 	HermesFeedbackEnabled  bool     `json:"hermesFeedbackEnabled,omitempty"`
 	JA3BlockList           []string `json:"ja3BlockList,omitempty"`
+
+	// Feature: Redis TLS
+	RedisTLSEnabled        bool     `json:"redisTLSEnabled,omitempty"`
+	RedisTLSSkipVerify     bool     `json:"redisTLSSkipVerify,omitempty"`
+
+	// Feature: Scheduled blocking
+	ScheduledRules         []ScheduledRule `json:"scheduledRules,omitempty"`
+}
+
+type ScheduledRule struct {
+	CronExpr  string   `json:"cronExpr"`  // HH:MM-HH:MM format
+	Action    string   `json:"action"`    // block | captcha
+	Paths     []string `json:"paths,omitempty"`
+	Countries []string `json:"countries,omitempty"`
 }
 
 type RateLimitPath struct {
@@ -298,7 +312,8 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	h.initJA3BlockList()
 	h.initBodyInspector()
 
-	h.cache = newCacheLayer(config.RedisAddr, config.RedisPassword, config.RedisDB, config.CacheTTL, logr)
+	h.cache = newCacheLayer(config.RedisAddr, config.RedisPassword, config.RedisDB, config.CacheTTL,
+		config.RedisTLSEnabled, config.RedisTLSSkipVerify, logr)
 	h.seedStaticLists()
 
 	if config.HermesEndpoint != "" {
@@ -782,6 +797,24 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			h.serveFeedbackStats(w)
 			return
 		}
+		if req.URL.Path == "/.hermes-guard/audit" {
+			if !h.checkAdminAuth(req) {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			h.serveAuditExport(w, req)
+			return
+		}
+	}
+
+	// Scheduled blocking rules
+	if active, action := h.isScheduledActive(); active {
+		if action == "captcha" && h.config.TurnstileSecretKey != "" {
+			h.challengeRequest(w, req, "scheduled_rule")
+		} else {
+			h.blockRequest(w, req, "scheduled_rule")
+		}
+		return
 	}
 
 	// JA3 fingerprint check (before all other checks)
@@ -1724,6 +1757,39 @@ func (h *handler) extractJA3(req *http.Request) string {
 	return fmt.Sprintf("%s_%s_%s", req.Method, req.Proto, ua)
 }
 
+func (h *handler) serveAuditExport(w http.ResponseWriter, req *http.Request) {
+	format := req.URL.Query().Get("format")
+	if format != "csv" {
+		format = "json"
+	}
+	w.Header().Set("Content-Type", "application/"+format)
+	w.Header().Set("Content-Disposition", "attachment; filename=audit."+format)
+
+	if format == "csv" {
+		w.Write([]byte("timestamp,client_ip,method,path,reason,risk_score,host\n"))
+	}
+	w.Write([]byte(`[]`))
+}
+
+func (h *handler) isScheduledActive() (bool, string) {
+	if len(h.config.ScheduledRules) == 0 {
+		return false, ""
+	}
+	now := time.Now()
+	currentMinutes := now.Hour()*60 + now.Minute()
+	for _, rule := range h.config.ScheduledRules {
+		parts := strings.Split(rule.CronExpr, "-")
+		if len(parts) != 2 {
+			continue
+		}
+		start, _ := strconv.Atoi(strings.Replace(parts[0], ":", "", 1))
+		end, _ := strconv.Atoi(strings.Replace(parts[1], ":", "", 1))
+		if currentMinutes >= start && currentMinutes <= end {
+			return true, rule.Action
+		}
+	}
+	return false, ""
+}
 func (h *handler) recordHermesFeedback(hermesVerdict string, actualMatch bool) {
 	if !h.config.HermesFeedbackEnabled {
 		return
